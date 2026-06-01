@@ -9,8 +9,7 @@ const router  = require('express').Router();
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 const pool    = require('../db');
-
-const SAGA_REGEX = /^[A-Z]\d{4,6}-[A-Z]$/i;
+const SAGA_REGEX = /^[A-Z]\d{4,6}-[A-Z0-9]$/i;
 
 function makeToken(id, role) {
   return jwt.sign({ uid: id, role }, process.env.JWT_SECRET, { expiresIn: '24h' });
