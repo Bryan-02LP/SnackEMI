@@ -1,0 +1,8 @@
+node_modules/
+.env
+public/img/prod/*.jpg
+public/img/prod/*.png
+public/img/prod/*.webp
+*.log
+.DS_Store
+Thumbs.db

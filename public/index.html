@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SnackEMI – Snack Universitario</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ══════════════════════════════════
+       SPLASH / ONBOARDING
+  ══════════════════════════════════ -->
+  <div id="splash-screen" class="splash-screen active">
+    <div class="splash-bg"></div>
+    <div class="splash-content">
+      <!-- Logo EMI (reemplaza la imagen) -->
+      <div class="emi-logo-wrap">
+        <img src="img/logo-emi.png" alt="EMI Logo" class="emi-logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <div class="emi-logo-placeholder">
+          <span>LOGO EMI</span>
+        </div>
+      </div>
+      <h1 class="splash-title">Snack<span>EMI</span></h1>
+      <p class="splash-sub">Tu snack universitario, ahora digital</p>
+      <div class="splash-dots">
+        <span class="dot active"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+      <div class="splash-slides">
+        <div class="splash-slide active">
+          <div class="slide-icon">🍔</div>
+          <h3>Todos tus favoritos</h3>
+          <p>Explora el menú completo del snack, precios actualizados y disponibilidad en tiempo real.</p>
+        </div>
+        <div class="splash-slide">
+          <div class="slide-icon">⚡</div>
+          <h3>Pedido anticipado</h3>
+          <p>Haz tu pedido antes del recreo y recógelo sin hacer fila. Ahorra tiempo en tu día.</p>
+        </div>
+        <div class="splash-slide">
+          <div class="slide-icon">📱</div>
+          <h3>Pago con QR</h3>
+          <p>Paga de forma rápida y segura con tu QR. Sin efectivo, sin complicaciones.</p>
+        </div>
+      </div>
+      <button class="btn-primary splash-btn" id="btn-splash-next">Siguiente</button>
+      <button class="btn-ghost" id="btn-splash-skip">Saltar</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       AUTH SCREEN (Login / Register)
+  ══════════════════════════════════ -->
+  <div id="auth-screen" class="auth-screen hidden">
+    <div class="auth-bg">
+      <div class="auth-wave"></div>
+    </div>
+    <div class="auth-container">
+      <!-- Logo -->
+      <div class="auth-logo">
+        <img src="img/logo-emi.png" alt="EMI" class="emi-logo-sm" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <div class="emi-logo-placeholder-sm"><span>EMI</span></div>
+        <div class="auth-brand">
+          <h2>Snack<span>EMI</span></h2>
+          <p>Escuela Militar de Ingeniería</p>
+        </div>
+      </div>
+
+      <!-- Tab switcher -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Iniciar Sesión</button>
+        <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Registrarse</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="login-form" class="auth-form active" onsubmit="handleLogin(event)">
+        <h3>Bienvenido de vuelta</h3>
+        <p class="form-sub">Ingresa con tu código SAGA o CI</p>
+
+        <div class="input-group">
+          <label>Código SAGA o CI</label>
+          <div class="input-wrap">
+            <span class="input-icon">🎓</span>
+            <input type="text" id="login-saga" placeholder="Ej: A30001-X" required />
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Contraseña</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="login-pass" placeholder="••••••••" required />
+            <button type="button" class="toggle-pass" onclick="togglePass('login-pass')">👁</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary full-w">Ingresar</button>
+
+        <div class="auth-divider"><span>o</span></div>
+        <p class="auth-switch">¿No tienes cuenta? <a onclick="switchAuthTab('register')">Regístrate aquí</a></p>
+        <p class="admin-link"><a onclick="showAdminLogin()">🔐 Acceso Administrador</a></p>
+      </form>
+
+      <!-- REGISTER FORM -->
+      <form id="register-form" class="auth-form" onsubmit="handleRegister(event)">
+        <h3>Crear cuenta</h3>
+        <p class="form-sub">Completa tus datos EMI para registrarte</p>
+
+        <div class="input-group">
+          <label>Nombre completo</label>
+          <div class="input-wrap">
+            <span class="input-icon">👤</span>
+            <input type="text" id="reg-name" placeholder="Tu nombre completo" required />
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Carnet de Identidad (CI)</label>
+          <div class="input-wrap">
+            <span class="input-icon">🪪</span>
+            <input type="text" id="reg-ci" placeholder="Ej: 12345678" required />
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Código SAGA</label>
+          <div class="input-wrap">
+            <span class="input-icon">🎓</span>
+            <input type="text" id="reg-saga" placeholder="Ej: A30001-X" required />
+          </div>
+          <small>Formato: LetraSecciónNúmero-Letra (ej. A30001-X)</small>
+        </div>
+
+        <div class="input-group">
+          <label>Contraseña</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="reg-pass" placeholder="Mínimo 6 caracteres" required />
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Confirmar contraseña</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="reg-pass2" placeholder="Repite tu contraseña" required />
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary full-w">Crear Cuenta</button>
+        <p class="auth-switch">¿Ya tienes cuenta? <a onclick="switchAuthTab('login')">Inicia sesión</a></p>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       ADMIN LOGIN MODAL
+  ══════════════════════════════════ -->
+  <div id="admin-login-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('admin-login-modal')">✕</button>
+      <div class="modal-header">
+        <span class="modal-icon">🔐</span>
+        <h3>Acceso Administrativo</h3>
+        <p>Solo para encargados del snack EMI</p>
+      </div>
+      <form onsubmit="handleAdminLogin(event)">
+        <div class="input-group">
+          <label>Usuario administrador</label>
+          <div class="input-wrap">
+            <span class="input-icon">👮</span>
+            <input type="text" id="admin-user" placeholder="admin" required />
+          </div>
+        </div>
+        <div class="input-group">
+          <label>Código especial</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔑</span>
+            <input type="password" id="admin-code" placeholder="Código de acceso" required />
+          </div>
+        </div>
+        <button type="submit" class="btn-primary full-w">Entrar como Admin</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════
+       STUDENT APP
+  ══════════════════════════════════ -->
+  <div id="student-app" class="app-shell hidden">
+
+    <!-- TOP NAV -->
+    <header class="app-header">
+      <div class="header-left">
+        <img src="img/logo-emi.png" alt="EMI" class="header-logo" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <div class="header-logo-placeholder"><span>EMI</span></div>
+        <div class="header-text">
+          <span class="header-greeting" id="greeting-text">Hola, Estudiante 👋</span>
+          <span class="header-sub">Snack Universitario EMI</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" onclick="showScreen('cart-screen')">
+          🛒 <span class="badge" id="cart-badge">0</span>
+        </button>
+        <button class="icon-btn" onclick="showProfileMenu()">
+          <div class="avatar" id="user-avatar">ES</div>
+        </button>
+      </div>
+    </header>
+
+    <!-- OFFER BANNER -->
+    <div id="offer-banner" class="offer-banner hidden">
+      <button class="banner-close" onclick="document.getElementById('offer-banner').classList.add('hidden')">✕</button>
+      <span class="banner-label">🎉 Oferta del día</span>
+      <strong id="banner-text">¡Combo Almuerzo con 10% OFF!</strong>
+      <span class="banner-code">Código: <b>EMI2025</b></span>
+    </div>
+
+    <!-- MAIN CONTENT PAGES -->
+    <main class="app-main">
+
+      <!-- ── HOME PAGE ── -->
+      <section id="home-screen" class="app-screen active">
+
+        <!-- Search bar -->
+        <div class="search-wrap">
+          <input type="text" class="search-input" placeholder="Buscar productos..." id="search-input" oninput="filterProducts()" />
+          <span class="search-icon">🔍</span>
+        </div>
+
+        <!-- Categories -->
+        <div class="section-header">
+          <h4>Categorías</h4>
+          <a onclick="showScreen('catalog-screen')" class="see-all">Ver todo</a>
+        </div>
+        <div class="categories-row" id="categories-row">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Featured Products -->
+        <div class="section-header">
+          <h4>Destacados</h4>
+          <a onclick="showScreen('catalog-screen')" class="see-all">Ver todo</a>
+        </div>
+        <div class="products-grid featured" id="featured-products">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- All Products -->
+        <div class="section-header">
+          <h4>Todos los productos</h4>
+        </div>
+        <div class="products-list" id="all-products">
+          <!-- Populated by JS -->
+        </div>
+
+      </section>
+
+      <!-- ── CATALOG PAGE ── -->
+      <section id="catalog-screen" class="app-screen">
+        <div class="screen-header">
+          <button onclick="showScreen('home-screen')" class="back-btn">←</button>
+          <h3>Catálogo completo</h3>
+        </div>
+        <div class="filter-row" id="filter-row">
+          <!-- Category filters -->
+        </div>
+        <div class="products-grid full" id="catalog-products">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- ── PRODUCT DETAIL ── -->
+      <section id="detail-screen" class="app-screen">
+        <div id="product-detail-content">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+      <!-- ── CART ── -->
+      <section id="cart-screen" class="app-screen">
+        <div class="screen-header">
+          <button onclick="goBack()" class="back-btn">←</button>
+          <h3>Mi Carrito</h3>
+          <button onclick="clearCart()" class="text-btn-danger">Vaciar</button>
+        </div>
+        <div id="cart-items" class="cart-items">
+          <!-- Populated by JS -->
+        </div>
+        <div class="cart-footer" id="cart-footer">
+          <div class="cart-total">
+            <span>Total</span>
+            <strong id="cart-total-amount">Bs. 0.00</strong>
+          </div>
+          <div class="pickup-time">
+            <label>⏱ Hora de recogida estimada</label>
+            <select id="pickup-time">
+              <option>10 minutos</option>
+              <option>20 minutos</option>
+              <option>Recreo (11:30)</option>
+              <option>Recreo (16:00)</option>
+            </select>
+          </div>
+          <button class="btn-primary full-w" onclick="showScreen('checkout-screen')">Confirmar Pedido →</button>
+        </div>
+      </section>
+
+      <!-- ── CHECKOUT / QR PAYMENT ── -->
+      <section id="checkout-screen" class="app-screen">
+        <div class="screen-header">
+          <button onclick="showScreen('cart-screen')" class="back-btn">←</button>
+          <h3>Pago con QR</h3>
+        </div>
+        <div class="checkout-body">
+          <div class="checkout-order-summary" id="checkout-summary">
+            <!-- Order summary -->
+          </div>
+
+          <div class="qr-payment-card">
+            <div class="qr-header">
+              <span class="qr-badge">📱 Pago QR</span>
+              <h4>Escanea el código QR</h4>
+              <p>Usa tu app bancaria para realizar el pago</p>
+            </div>
+
+            <!-- QR IMAGE PLACEHOLDER -->
+            <div class="qr-image-wrap">
+              <img src="img/qr-pago.png" alt="QR de pago" class="qr-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+              <div class="qr-placeholder">
+                <div class="qr-mock">
+                  <div class="qr-grid"></div>
+                </div>
+                <p>[ Aquí va el QR de pago ]</p>
+                <small>Reemplaza img/qr-pago.png</small>
+              </div>
+            </div>
+
+            <div class="qr-amount">
+              <span>Monto a pagar</span>
+              <strong id="qr-total">Bs. 0.00</strong>
+            </div>
+
+            <div class="qr-steps">
+              <div class="qr-step">
+                <span class="step-num">1</span>
+                <p>Abre tu app bancaria (Tigo Money, Banco BNB, etc.)</p>
+              </div>
+              <div class="qr-step">
+                <span class="step-num">2</span>
+                <p>Selecciona "Pagar con QR" y escanea el código</p>
+              </div>
+              <div class="qr-step">
+                <span class="step-num">3</span>
+                <p>Ingresa el monto exacto y confirma el pago</p>
+              </div>
+              <div class="qr-step">
+                <span class="step-num">4</span>
+                <p>Muestra el comprobante al encargado del snack</p>
+              </div>
+            </div>
+
+            <button class="btn-primary full-w" onclick="confirmOrder()">✅ Confirmar Pedido</button>
+            <button class="btn-outline full-w" onclick="showScreen('cart-screen')">← Volver al carrito</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── ORDER CONFIRMATION ── -->
+      <section id="confirm-screen" class="app-screen">
+        <div class="confirm-body">
+          <div class="confirm-icon">🎉</div>
+          <h2>¡Pedido confirmado!</h2>
+          <p>Tu pedido ha sido registrado. Preséntate al snack en el tiempo indicado con tu comprobante de pago.</p>
+          <div class="confirm-detail">
+            <div class="confirm-row">
+              <span>N° de pedido</span>
+              <strong id="order-number">#EMI-0001</strong>
+            </div>
+            <div class="confirm-row">
+              <span>Hora de recogida</span>
+              <strong id="confirm-pickup">10 minutos</strong>
+            </div>
+            <div class="confirm-row">
+              <span>Total pagado</span>
+              <strong id="confirm-total">Bs. 0.00</strong>
+            </div>
+          </div>
+          <button class="btn-primary full-w" onclick="goHome()">Volver al inicio</button>
+        </div>
+      </section>
+
+      <!-- ── MY ORDERS ── -->
+      <section id="orders-screen" class="app-screen">
+        <div class="screen-header">
+          <button onclick="goHome()" class="back-btn">←</button>
+          <h3>Mis Pedidos</h3>
+        </div>
+        <div id="my-orders-list" class="orders-list">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- ── PROFILE ── -->
+      <section id="profile-screen" class="app-screen">
+        <div class="screen-header">
+          <button onclick="goHome()" class="back-btn">←</button>
+          <h3>Mi Perfil</h3>
+        </div>
+        <div class="profile-body">
+          <div class="profile-card">
+            <div class="profile-avatar" id="profile-avatar-big">ES</div>
+            <h3 id="profile-name">Estudiante EMI</h3>
+            <p id="profile-saga">A30001-X</p>
+            <span class="profile-badge">Estudiante</span>
+          </div>
+          <div class="profile-info">
+            <div class="info-row">
+              <span class="info-label">🪪 CI</span>
+              <span id="profile-ci">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">🎓 Código SAGA</span>
+              <span id="profile-saga-info">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">📦 Pedidos realizados</span>
+              <span id="profile-orders">0</span>
+            </div>
+          </div>
+          <button class="btn-outline full-w" onclick="logout()">🚪 Cerrar Sesión</button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" onclick="showScreen('home-screen');setActiveNav(this)" data-label="Inicio">
+        <span class="nav-icon">🏠</span>
+        <span>Inicio</span>
+      </button>
+      <button class="nav-item" onclick="showScreen('catalog-screen');setActiveNav(this)" data-label="Menú">
+        <span class="nav-icon">🍽</span>
+        <span>Menú</span>
+      </button>
+      <button class="nav-item cart-nav" onclick="showScreen('cart-screen');setActiveNav(this)" data-label="Carrito">
+        <span class="nav-icon">🛒</span>
+        <span>Carrito</span>
+        <span class="nav-badge" id="nav-cart-badge">0</span>
+      </button>
+      <button class="nav-item" onclick="showScreen('orders-screen');setActiveNav(this)" data-label="Pedidos">
+        <span class="nav-icon">📋</span>
+        <span>Pedidos</span>
+      </button>
+      <button class="nav-item" onclick="showScreen('profile-screen');setActiveNav(this)" data-label="Perfil">
+        <span class="nav-icon">👤</span>
+        <span>Perfil</span>
+      </button>
+    </nav>
+
+  </div><!-- /student-app -->
+
+  <!-- ══════════════════════════════════
+       ADMIN APP
+  ══════════════════════════════════ -->
+  <div id="admin-app" class="admin-shell hidden">
+
+    <!-- SIDEBAR -->
+    <aside class="admin-sidebar" id="admin-sidebar">
+      <div class="sidebar-logo">
+        <img src="img/logo-emi.png" alt="EMI" class="emi-logo-admin" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <div class="emi-logo-placeholder-admin"><span>EMI</span></div>
+        <div>
+          <h3>Snack<span>EMI</span></h3>
+          <small>Panel Admin</small>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="sidebar-btn active" onclick="showAdminPanel('dashboard');setSidebarActive(this)">
+          <span>📊</span> Dashboard
+        </button>
+        <button class="sidebar-btn" onclick="showAdminPanel('products');setSidebarActive(this)">
+          <span>🍔</span> Productos
+        </button>
+        <button class="sidebar-btn" onclick="showAdminPanel('orders');setSidebarActive(this)">
+          <span>📋</span> Pedidos
+        </button>
+        <button class="sidebar-btn" onclick="showAdminPanel('stock');setSidebarActive(this)">
+          <span>📦</span> Inventario
+        </button>
+        <button class="sidebar-btn" onclick="showAdminPanel('students');setSidebarActive(this)">
+          <span>🎓</span> Estudiantes
+        </button>
+        <button class="sidebar-btn" onclick="showAdminPanel('reports');setSidebarActive(this)">
+          <span>📈</span> Reportes
+        </button>
+        <button class="sidebar-btn" onclick="showAdminPanel('settings');setSidebarActive(this)">
+          <span>⚙️</span> Configuración
+        </button>
+      </nav>
+      <button class="sidebar-logout" onclick="logout()">🚪 Cerrar Sesión</button>
+    </aside>
+
+    <!-- ADMIN MAIN -->
+    <div class="admin-main">
+
+      <!-- Admin Top Bar -->
+      <header class="admin-topbar">
+        <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+        <h2 id="admin-panel-title">Dashboard</h2>
+        <div class="admin-user">
+          <span>Admin EMI</span>
+          <div class="avatar admin-avatar">AD</div>
+        </div>
+      </header>
+
+      <!-- ── DASHBOARD ── -->
+      <section id="admin-dashboard" class="admin-panel active">
+        <div class="stats-grid">
+          <div class="stat-card blue">
+            <div class="stat-icon">📦</div>
+            <div class="stat-info">
+              <span class="stat-num" id="stat-products">0</span>
+              <span class="stat-label">Productos activos</span>
+            </div>
+          </div>
+          <div class="stat-card yellow">
+            <div class="stat-icon">🛒</div>
+            <div class="stat-info">
+              <span class="stat-num" id="stat-orders">0</span>
+              <span class="stat-label">Pedidos hoy</span>
+            </div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-icon">💰</div>
+            <div class="stat-info">
+              <span class="stat-num" id="stat-revenue">Bs. 0</span>
+              <span class="stat-label">Ventas hoy</span>
+            </div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-info">
+              <span class="stat-num" id="stat-lowstock">0</span>
+              <span class="stat-label">Stock bajo</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent orders table -->
+        <div class="admin-card">
+          <div class="card-header">
+            <h4>Pedidos recientes</h4>
+            <button class="btn-sm" onclick="showAdminPanel('orders')">Ver todos</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="recent-orders-table">
+              <thead>
+                <tr>
+                  <th>#Pedido</th>
+                  <th>Estudiante</th>
+                  <th>Total</th>
+                  <th>Estado</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody id="recent-orders-body">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Low stock alert -->
+        <div class="admin-card">
+          <div class="card-header">
+            <h4>⚠️ Stock bajo</h4>
+          </div>
+          <div id="low-stock-list" class="low-stock-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ── PRODUCTS MANAGEMENT ── -->
+      <section id="admin-products" class="admin-panel">
+        <div class="panel-toolbar">
+          <div class="toolbar-left">
+            <input type="text" class="admin-search" placeholder="Buscar producto..." oninput="filterAdminProducts(this.value)" />
+          </div>
+          <button class="btn-primary" onclick="openProductModal()">+ Agregar Producto</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="products-table">
+            <thead>
+              <tr>
+                <th>Imagen</th>
+                <th>Nombre</th>
+                <th>Categoría</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="products-table-body">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── ORDERS MANAGEMENT ── -->
+      <section id="admin-orders" class="admin-panel">
+        <div class="panel-toolbar">
+          <div class="status-filters">
+            <button class="filter-btn active" onclick="filterOrders('all');setFilterActive(this)">Todos</button>
+            <button class="filter-btn" onclick="filterOrders('pendiente');setFilterActive(this)">Pendientes</button>
+            <button class="filter-btn" onclick="filterOrders('preparando');setFilterActive(this)">Preparando</button>
+            <button class="filter-btn" onclick="filterOrders('listo');setFilterActive(this)">Listos</button>
+            <button class="filter-btn" onclick="filterOrders('entregado');setFilterActive(this)">Entregados</button>
+          </div>
+        </div>
+        <div id="orders-cards" class="orders-cards">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- ── STOCK MANAGEMENT ── -->
+      <section id="admin-stock" class="admin-panel">
+        <div class="panel-toolbar">
+          <h4>Control de Inventario</h4>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Stock actual</th>
+                <th>Stock mínimo</th>
+                <th>Estado</th>
+                <th>Ajustar stock</th>
+              </tr>
+            </thead>
+            <tbody id="stock-table-body">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── STUDENTS ── -->
+      <section id="admin-students" class="admin-panel">
+        <div class="panel-toolbar">
+          <input type="text" class="admin-search" placeholder="Buscar estudiante..." />
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>CI</th>
+                <th>Código SAGA</th>
+                <th>Pedidos</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="students-table-body">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── REPORTS ── -->
+      <section id="admin-reports" class="admin-panel">
+        <div class="reports-grid">
+          <div class="admin-card">
+            <h4>📊 Productos más vendidos</h4>
+            <div id="top-products-chart" class="chart-wrap">
+              <!-- Chart placeholder -->
+              <div class="chart-placeholder">
+                <p>Gráfico de ventas por producto</p>
+                <small>Conecta con la base de datos para ver datos reales</small>
+              </div>
+            </div>
+          </div>
+          <div class="admin-card">
+            <h4>📅 Ventas por día</h4>
+            <div id="daily-sales-chart" class="chart-wrap">
+              <div class="chart-placeholder">
+                <p>Gráfico de ventas diarias</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <!-- ── CONFIGURACIÓN ── -->
+      <section id="admin-settings" class="admin-panel">
+        <div class="settings-grid">
+
+          <!-- Logo EMI -->
+          <div class="admin-card">
+            <div class="card-header">
+              <h4>🏫 Logo de la EMI</h4>
+            </div>
+            <div class="settings-upload-wrap">
+              <div class="settings-img-preview-box">
+                <img id="settings-logo-preview" src="" alt="Logo EMI"
+                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+                <div class="settings-img-placeholder"><span>🏫</span><p>Sin logo aún</p></div>
+              </div>
+              <div class="settings-upload-info">
+                <p>Sube el archivo <strong>logo_emi.png</strong> oficial. Aparece en la pantalla de bienvenida, encabezado y panel admin.</p>
+                <small>JPG, PNG o WebP · Máx 2MB · Imagen cuadrada recomendada</small>
+                <div class="img-upload-zone" style="margin-top:14px" onclick="document.getElementById('logo-file-input').click()">
+                  <span>📷</span>
+                  <p>Clic para seleccionar logo</p>
+                  <input type="file" id="logo-file-input" accept="image/*" style="display:none" onchange="uploadLogo(this)" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- QR de pago -->
+          <div class="admin-card">
+            <div class="card-header">
+              <h4>📱 Código QR de Pago</h4>
+            </div>
+            <div class="settings-upload-wrap">
+              <div class="settings-img-preview-box">
+                <img id="settings-qr-preview" src="" alt="QR Pago"
+                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+                <div class="settings-img-placeholder">
+                  <div class="qr-mock" style="width:80px;height:80px;margin-bottom:8px"></div>
+                  <p>Sin QR aún</p>
+                </div>
+              </div>
+              <div class="settings-upload-info">
+                <p>Sube tu QR de pago (Tigo Money, BNB, etc.). Lo verán los estudiantes al confirmar su pedido.</p>
+                <small>JPG o PNG · Máx 2MB · El QR debe ser legible y nítido</small>
+                <div class="img-upload-zone" style="margin-top:14px" onclick="document.getElementById('qr-file-input').click()">
+                  <span>📱</span>
+                  <p>Clic para seleccionar imagen del QR</p>
+                  <input type="file" id="qr-file-input" accept="image/*" style="display:none" onchange="uploadQR(this)" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Galería rápida de fotos de productos -->
+          <div class="admin-card settings-full">
+            <div class="card-header">
+              <h4>🍔 Fotos de Productos</h4>
+              <span style="font-size:.82rem;color:var(--gray-300)">Haz clic en cualquier producto para editar su foto</span>
+            </div>
+            <div class="products-photo-grid" id="products-photo-grid">
+              <!-- Populated by renderSettingsPanel() in JS -->
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div><!-- /admin-main -->
+  </div><!-- /admin-app -->
+
+  <!-- ══════════════════════════════════
+       MODALS
+  ══════════════════════════════════ -->
+
+  <!-- Product Modal (Admin) -->
+  <div id="product-modal" class="modal-overlay hidden">
+    <div class="modal-box large">
+      <button class="modal-close" onclick="closeModal('product-modal')">✕</button>
+      <h3 id="product-modal-title">Agregar Producto</h3>
+
+      <form id="product-form" onsubmit="saveProduct(event)">
+        <input type="hidden" id="edit-product-id" />
+
+        <!-- Product image placeholder -->
+        <div class="img-upload-zone" onclick="document.getElementById('product-img-input').click()">
+          <img id="product-img-preview" src="" alt="" style="display:none;max-height:120px;border-radius:8px;" />
+          <div id="img-placeholder">
+            <span>📷</span>
+            <p>Haz clic para subir imagen del producto</p>
+            <small>JPG, PNG hasta 2MB</small>
+          </div>
+          <input type="file" id="product-img-input" accept="image/*" style="display:none" onchange="previewProductImg(this)" />
+        </div>
+
+        <div class="form-grid">
+          <div class="input-group">
+            <label>Nombre del producto *</label>
+            <input type="text" id="p-name" placeholder="Ej: Hamburguesa clásica" required />
+          </div>
+          <div class="input-group">
+            <label>Categoría *</label>
+            <select id="p-category" required>
+              <option value="">Selecciona...</option>
+              <option>Comidas</option>
+              <option>Bebidas</option>
+              <option>Snacks</option>
+              <option>Dulces</option>
+              <option>Jugos</option>
+              <option>Otros</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>Precio (Bs.) *</label>
+            <input type="number" id="p-price" step="0.5" min="0" placeholder="0.00" required />
+          </div>
+          <div class="input-group">
+            <label>Stock inicial *</label>
+            <input type="number" id="p-stock" min="0" placeholder="0" required />
+          </div>
+          <div class="input-group">
+            <label>Stock mínimo (alerta)</label>
+            <input type="number" id="p-min-stock" min="0" placeholder="5" />
+          </div>
+          <div class="input-group">
+            <label>Estado</label>
+            <select id="p-status">
+              <option value="activo">Disponible</option>
+              <option value="agotado">Agotado</option>
+              <option value="inactivo">Inactivo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="input-group full">
+          <label>Descripción</label>
+          <textarea id="p-desc" rows="3" placeholder="Descripción breve del producto..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-outline" onclick="closeModal('product-modal')">Cancelar</button>
+          <button type="submit" class="btn-primary">Guardar Producto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden">
+    <span id="toast-msg">Mensaje</span>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
