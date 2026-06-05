@@ -1558,6 +1558,8 @@ img { max-width: 100%; display: block; }
   min-height: 100dvh;
   width: 100%;
   overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-topbar {
@@ -1565,12 +1567,13 @@ img { max-width: 100%; display: block; }
   align-items: center;
   gap: 16px;
   background: var(--white);
-  padding: 14px 24px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--gray-100);
   position: sticky;
   top: 0;
   z-index: 100;
   box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
 }
 .sidebar-toggle {
   display: none;
@@ -1603,17 +1606,19 @@ img { max-width: 100%; display: block; }
 /* ── ADMIN PANELS ── */
 .admin-panel {
   display: none;
-  padding: 24px;
+  padding: 16px;
   animation: fadeIn 0.2s ease;
+  min-height: 100%;
+  padding-bottom: 40px;
 }
 .admin-panel.active { display: block; }
 
 /* Stats grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .stat-card {
@@ -2193,4 +2198,30 @@ img { max-width: 100%; display: block; }
   }
   .sidebar-overlay { display: none !important; }
   .sidebar-toggle { display: none !important; }
+}
+
+
+/* ── ADMIN SCROLL FIXES ── */
+.admin-shell {
+  overflow: hidden;
+}
+.admin-main {
+  height: calc(100dvh - 0px);
+}
+.low-stock-list {
+  max-height: none;
+  overflow: visible;
+}
+.orders-cards {
+  overflow: visible;
+}
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .admin-card { padding: 14px; }
+  .admin-topbar h2 { font-size: 1rem; }
+  .admin-user span { display: none; }
 }
