@@ -8,6 +8,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#F5A623" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SnackEMI" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 </head>
 <body>
 
@@ -104,6 +112,17 @@
         <div class="auth-divider"><span>o</span></div>
         <p class="auth-switch">¿No tienes cuenta? <a onclick="switchAuthTab('register')">Regístrate aquí</a></p>
         <p class="admin-link"><a onclick="showAdminLogin()">🔐 Acceso Administrador</a></p>
+
+        <!-- Botón instalar PWA -->
+        <div id="pwa-install-wrap" style="display:none;margin-top:8px">
+          <button id="pwa-install-btn" class="btn-outline full-w" style="gap:8px">
+            📲 Instalar aplicación en tu celular
+          </button>
+          <p style="text-align:center;font-size:.75rem;color:var(--gray-300);margin-top:6px">
+            Instálala como app sin necesidad de Play Store
+          </p>
+        </div>
+
       </form>
 
       <!-- REGISTER FORM -->
@@ -307,6 +326,11 @@
               <option>Recreo (11:30)</option>
               <option>Recreo (16:00)</option>
             </select>
+          </div>
+          <div class="input-group" style="margin-bottom:10px">
+            <label style="font-size:.82rem;font-weight:600;color:var(--gray-600)">📝 Indicaciones (opcional)</label>
+            <textarea id="order-notes" rows="2" placeholder="Ej: Paso a recoger en 10 min, sin sal, etc."
+              style="width:100%;padding:10px 12px;border:2px solid var(--gray-100);border-radius:12px;font-size:.88rem;resize:none;outline:none;font-family:var(--font-body);background:var(--gray-50)"></textarea>
           </div>
           <button class="btn-primary full-w" onclick="showScreen('checkout-screen')">Confirmar Pedido →</button>
         </div>
@@ -850,11 +874,99 @@
     </div>
   </div>
 
+  <!-- iOS Install Modal -->
+  <div id="ios-install-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('ios-install-modal')">✕</button>
+      <div class="modal-header">
+        <span class="modal-icon">📲</span>
+        <h3>Instalar en iPhone</h3>
+        <p>Sigue estos pasos para instalar SnackEMI</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:4px">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <span style="background:var(--yellow);color:var(--blue-dark);font-weight:800;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</span>
+          <p style="font-size:.9rem;color:var(--gray-600)">Toca el botón de <strong>Compartir</strong> <span style="font-size:1.1rem">⬆️</span> en la barra inferior de Safari</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <span style="background:var(--yellow);color:var(--blue-dark);font-weight:800;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</span>
+          <p style="font-size:.9rem;color:var(--gray-600)">Busca y toca <strong>"Agregar a pantalla de inicio"</strong> 📱</p>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <span style="background:var(--yellow);color:var(--blue-dark);font-weight:800;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</span>
+          <p style="font-size:.9rem;color:var(--gray-600)">Toca <strong>"Agregar"</strong> arriba a la derecha</p>
+        </div>
+        <div style="background:var(--green-pale);padding:12px;border-radius:10px;text-align:center">
+          <p style="font-size:.85rem;color:#15803D;font-weight:600">✅ SnackEMI aparecerá en tu pantalla de inicio como una app</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div id="toast" class="toast hidden">
     <span id="toast-msg">Mensaje</span>
   </div>
 
   <script src="js/app.js"></script>
+  <script>
+    // ── Registrar Service Worker (PWA) ──
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(() => console.log('✅ SW registrado'))
+          .catch(e => console.log('SW error:', e));
+      });
+    }
+
+    // ── Botón de instalación PWA ──
+    let deferredPrompt = null;
+    const installWrap = document.getElementById('pwa-install-wrap');
+    const installBtn  = document.getElementById('pwa-install-btn');
+
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      // Mostrar botón solo si no está instalada ya
+      if (installWrap) installWrap.style.display = 'block';
+    });
+
+    if (installBtn) {
+      installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          installWrap.style.display = 'none';
+        }
+        deferredPrompt = null;
+      });
+    }
+
+    // Si ya está instalada como PWA, ocultar el botón
+    window.addEventListener('appinstalled', () => {
+      if (installWrap) installWrap.style.display = 'none';
+      deferredPrompt = null;
+    });
+
+    // ── Detectar iOS y mostrar instrucciones manuales ──
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches;
+
+    if (isIOS && !isInStandaloneMode) {
+      // En iOS mostrar botón con instrucciones
+      setTimeout(() => {
+        const wrap = document.getElementById('pwa-install-wrap');
+        const btn  = document.getElementById('pwa-install-btn');
+        if (wrap && btn) {
+          wrap.style.display = 'block';
+          btn.textContent = '📲 Instalar en iPhone/iPad';
+          btn.onclick = () => {
+            document.getElementById('ios-install-modal').classList.remove('hidden');
+          };
+        }
+      }, 500);
+    }
+  </script>
 </body>
 </html>

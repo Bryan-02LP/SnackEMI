@@ -91,13 +91,25 @@ async function apiPutUpload(url, formData) {
    INIT
 ════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
+  // Ocultar todo al inicio
+  document.getElementById('splash-screen').classList.remove('active');
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('student-app').classList.add('hidden');
+  document.getElementById('admin-app').classList.add('hidden');
+
   const saved = localStorage.getItem('snack_emi_session');
   if (saved) {
-    const session = JSON.parse(saved);
-    APP.currentUser = session.user;
-    APP.token       = session.token;
-    APP.isAdmin     = ['admin','encargado'].includes(session.user.role);
-    APP.isAdmin ? launchAdmin() : launchStudent();
+    try {
+      const session = JSON.parse(saved);
+      // Verificar que el token no sea muy viejo (24h)
+      APP.currentUser = session.user;
+      APP.token       = session.token;
+      APP.isAdmin     = ['admin','encargado'].includes(session.user.role);
+      APP.isAdmin ? launchAdmin() : launchStudent();
+    } catch(e) {
+      localStorage.removeItem('snack_emi_session');
+      document.getElementById('splash-screen').classList.add('active');
+    }
   } else {
     document.getElementById('splash-screen').classList.add('active');
   }
@@ -311,15 +323,15 @@ function filterByCategory(cat) {
 }
 
 function renderFeaturedProducts() {
-  const list = APP.products.filter(p => p.status === 'activo' && p.featured).slice(0, 4);
-  const all  = APP.products.filter(p => p.status === 'activo').slice(0, 4);
-  const show = list.length ? list : all;
+  const activos = APP.products.filter(p => p.status === 'activo');
+  const list    = activos.filter(p => p.featured).slice(0, 4);
+  const show    = list.length ? list : activos.slice(0, 4);
   document.getElementById('featured-products').innerHTML = show.map(productCardHTML).join('');
 }
 
 function renderAllProducts(filter = '') {
   const list = APP.products.filter(p =>
-    p.status === 'activo' &&
+    (p.status === 'activo') &&
     (!filter || p.name.toLowerCase().includes(filter.toLowerCase()))
   );
   document.getElementById('all-products').innerHTML = list.map(productRowHTML).join('');
@@ -337,7 +349,7 @@ function renderCatalog(categoryFilter = '') {
         </div>`).join('')}
     </div>`;
 
-  const filtered = APP.products.filter(p => !categoryFilter || p.category === categoryFilter);
+  const filtered = APP.products.filter(p => p.status === 'activo' && (!categoryFilter || p.category === categoryFilter));
   document.getElementById('catalog-products').innerHTML = filtered.length
     ? filtered.map(productCardHTML).join('')
     : `<div class="empty-cart"><div class="empty-icon">🔍</div><h4>Sin productos</h4></div>`;
@@ -535,12 +547,14 @@ function renderCheckout() {
 async function confirmOrder() {
   if (!APP.cart.length) { showToast('El carrito está vacío', 'error'); return; }
   const pickup = document.getElementById('pickup-time')?.value || '10 minutos';
+  const notes  = document.getElementById('order-notes')?.value?.trim() || '';
   showToast('Registrando pedido...', '');
 
   const data = await apiPost('/pedidos', {
-    items:        APP.cart.map(i => ({ id: i.id, qty: i.qty })),
-    horaRecogida: pickup,
-    metodoPago:   'QR',
+    items:         APP.cart.map(i => ({ id: i.id, qty: i.qty })),
+    horaRecogida:  pickup,
+    metodoPago:    'QR',
+    observaciones: notes,
   });
 
   if (!data.success) { showToast(data.error || 'Error al registrar pedido', 'error'); return; }
@@ -683,7 +697,11 @@ function renderAdminProducts(filter = '') {
       <td>
         <div class="action-btns">
           <button class="action-btn edit" onclick="openProductModal(${p.id})" title="Editar">✏️</button>
-          <button class="action-btn del"  onclick="deleteProduct(${p.id})"    title="Eliminar">🗑</button>
+          <button class="action-btn ${p.status==='inactivo'?'view':'del'}"
+            onclick="toggleProductStatus(${p.id},'${p.status}')"
+            title="${p.status==='inactivo'?'Habilitar':'Deshabilitar'}">
+            ${p.status==='inactivo'?'✅':'🚫'}
+          </button>
         </div>
       </td>
     </tr>`).join('');
@@ -709,6 +727,7 @@ async function renderAdminOrders(filter) {
           </div>
           <div class="order-student">👤 ${o.estudiante || '—'}</div>
           <div class="order-products">${o.items?.map(i=>`${i.producto} x${i.cantidad}`).join(', ') || '—'}</div>
+          ${o.observaciones ? `<div style="margin:4px 0;padding:6px 8px;background:var(--yellow-pale);border-radius:6px;font-size:.78rem;color:var(--yellow-dark)">📝 ${o.observaciones}</div>` : ''}
           <div class="order-footer">
             <span class="order-total">Bs. ${parseFloat(o.total).toFixed(2)}</span>
             <div class="order-actions">
@@ -811,7 +830,9 @@ function openProductModal(productId = null) {
     document.getElementById('p-price').value     = p.price;
     document.getElementById('p-stock').value     = p.stock;
     document.getElementById('p-min-stock').value = p.minStock;
-    document.getElementById('p-status').value    = p.status;
+    // Mostrar estado actual incluyendo inactivo
+    const statusEl = document.getElementById('p-status');
+    if (statusEl) statusEl.value = p.status;
     document.getElementById('p-desc').value      = p.desc || '';
 
     if (p.img) {
@@ -1055,3 +1076,22 @@ window.showScreen = function(screenId) {
   _origShowScreen(screenId);
   if (screenId === 'checkout-screen') loadQRForCheckout();
 };
+
+/* ── Habilitar / Deshabilitar producto rápido ── */
+async function toggleProductStatus(productId, currentStatus) {
+  const newStatus = currentStatus === 'inactivo' ? 'activo' : 'inactivo';
+  const label     = newStatus === 'inactivo' ? 'deshabilitar' : 'habilitar';
+  if (!confirm(`¿Deseas ${label} este producto?`)) return;
+
+  const fd = new FormData();
+  fd.append('estado', newStatus);
+  const data = await apiPutUpload(`/productos/${productId}`, fd);
+  if (data.success) {
+    showToast(newStatus === 'inactivo' ? '🚫 Producto deshabilitado' : '✅ Producto habilitado', 'success');
+    await loadProducts();
+    renderAdminProducts();
+    updateDashboardStats();
+  } else {
+    showToast(data.error || 'Error', 'error');
+  }
+}

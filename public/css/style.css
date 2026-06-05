@@ -50,6 +50,16 @@
   --transition-fast: 0.15s ease;
 }
 
+
+/* ── MOBILE FIX ── */
+html, body {
+  height: 100%;
+  height: -webkit-fill-available;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
 /* ── RESET & BASE ── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -558,11 +568,15 @@ img { max-width: 100%; display: block; }
   display: flex;
   flex-direction: column;
   height: 100dvh;
+  height: -webkit-fill-available;
   max-width: 430px;
   margin: 0 auto;
   background: var(--off-white);
-  position: relative;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%;
   box-shadow: var(--shadow-lg);
+  overflow: hidden;
 }
 
 /* ── APP HEADER ── */
@@ -708,6 +722,8 @@ img { max-width: 100%; display: block; }
   overflow-y: auto;
   overflow-x: hidden;
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .app-screen {
@@ -1398,10 +1414,11 @@ img { max-width: 100%; display: block; }
   display: flex;
   background: var(--white);
   border-top: 1px solid var(--gray-100);
-  position: sticky;
-  bottom: 0;
+  position: relative;
   z-index: 50;
   box-shadow: 0 -4px 20px rgba(10,22,40,0.08);
+  flex-shrink: 0;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 .nav-item {
   flex: 1;

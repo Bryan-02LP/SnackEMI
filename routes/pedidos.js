@@ -46,7 +46,7 @@ router.get('/', requireAuth, async (req, res) => {
 
 // ── CREAR ──
 router.post('/', requireAuth, async (req, res) => {
-  const { items, horaRecogida, metodoPago } = req.body;
+  const { items, horaRecogida, metodoPago, observaciones } = req.body;
   if (!items || items.length === 0)
     return res.status(400).json({ error: 'El carrito está vacío' });
 
@@ -76,9 +76,9 @@ router.post('/', requireAuth, async (req, res) => {
 
     // Insertar pedido
     const ins = await client.query(
-      `INSERT INTO pedidos (codigo, usuario_id, hora_recogida, total, metodo_pago, estado)
-       VALUES ($1,$2,$3,$4,$5,'pendiente') RETURNING pedido_id`,
-      [codigo, req.user.uid, horaRecogida||'10 minutos', total, metodoPago||'QR']
+      `INSERT INTO pedidos (codigo, usuario_id, hora_recogida, total, metodo_pago, estado, observaciones)
+       VALUES ($1,$2,$3,$4,$5,'pendiente',$6) RETURNING pedido_id`,
+      [codigo, req.user.uid, horaRecogida||'10 minutos', total, metodoPago||'QR', observaciones||'']
     );
     const pedidoId = ins.rows[0].pedido_id;
 
