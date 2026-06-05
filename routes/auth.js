@@ -9,7 +9,8 @@ const router  = require('express').Router();
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
 const pool    = require('../db');
-const SAGA_REGEX = /^[A-Z]\d{4,6}-[A-Z0-9]$/i;
+
+const SAGA_REGEX = /^[A-Z]\d{4,6}-[A-Z]$/i;
 
 function makeToken(id, role) {
   return jwt.sign({ uid: id, role }, process.env.JWT_SECRET, { expiresIn: '24h' });
@@ -140,3 +141,26 @@ router.post('/admin-login', async (req, res) => {
 });
 
 module.exports = router;
+
+// ── LISTAR ESTUDIANTES (admin) ──
+router.get('/students', async (req, res) => {
+  const { requireAdmin } = require('../middleware/auth');
+  try {
+    const { rows } = await pool.query(`
+      SELECT u.usuario_id, u.nombre_completo, u.ci, u.codigo_saga,
+             u.fecha_registro, u.ultimo_acceso,
+             COUNT(p.pedido_id) AS total_pedidos
+      FROM usuarios u
+      LEFT JOIN pedidos p ON u.usuario_id = p.usuario_id
+      INNER JOIN roles r ON u.rol_id = r.rol_id
+      WHERE r.nombre_rol = 'estudiante' AND u.activo = true
+      GROUP BY u.usuario_id, u.nombre_completo, u.ci, u.codigo_saga,
+               u.fecha_registro, u.ultimo_acceso
+      ORDER BY u.fecha_registro DESC
+    `);
+    res.json({ success: true, data: rows, total: rows.length });
+  } catch(e) {
+    console.error(e);
+    res.status(500).json({ error: 'Error al obtener estudiantes' });
+  }
+});

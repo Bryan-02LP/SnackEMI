@@ -618,6 +618,11 @@ function showAdminPanel(panel) {
   document.getElementById(`admin-${panel}`)?.classList.add('active');
   document.getElementById('admin-panel-title').textContent = panelTitle(panel);
   if (panel === 'settings') renderSettingsPanel();
+  if (panel === 'orders')   renderAdminOrders('all');
+  if (panel === 'stock')    renderStockTable();
+  if (panel === 'students') loadStudentsFromDB();
+  // Cerrar sidebar en móvil al seleccionar opción
+  if (window.innerWidth < 769) closeSidebar();
 }
 function panelTitle(p) {
   return { dashboard:'Dashboard', products:'Productos', orders:'Pedidos',
@@ -628,7 +633,16 @@ function setSidebarActive(btn) {
   document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
 }
-function toggleSidebar() { document.getElementById('admin-sidebar').classList.toggle('open'); }
+function toggleSidebar() {
+  const sidebar = document.getElementById('admin-sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  sidebar.classList.toggle('open');
+  if (overlay) overlay.classList.toggle('active', sidebar.classList.contains('open'));
+}
+function closeSidebar() {
+  document.getElementById('admin-sidebar')?.classList.remove('open');
+  document.getElementById('sidebar-overlay')?.classList.remove('active');
+}
 
 /* ── Dashboard ── */
 async function updateDashboardStats() {
@@ -801,10 +815,31 @@ async function adjustStock(productId) {
 
 /* ── Students ── */
 function renderStudentsTable() {
+  loadStudentsFromDB();
+}
+
+async function loadStudentsFromDB() {
   const tbody = document.getElementById('students-table-body');
   if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--gray-300);padding:20px">
-    Conecta la tabla de usuarios para ver los estudiantes registrados.</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--gray-300);padding:20px">Cargando...</td></tr>`;
+
+  try {
+    const data = await apiGet('/auth/students');
+    if (!data.success || !data.data.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--gray-300);padding:20px">No hay estudiantes registrados aún.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.data.map(s => `
+      <tr>
+        <td><strong>${s.nombre_completo}</strong></td>
+        <td>${s.ci}</td>
+        <td><span style="font-family:var(--font-main);font-weight:600;color:var(--blue)">${s.codigo_saga}</span></td>
+        <td>${s.total_pedidos || 0}</td>
+        <td><span class="status-pill pill-activo">Activo</span></td>
+      </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--red);padding:20px">Error al cargar estudiantes.</td></tr>`;
+  }
 }
 
 /* ════════════════════════════════════════════════════════════
