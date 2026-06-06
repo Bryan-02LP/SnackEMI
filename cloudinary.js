@@ -29,8 +29,8 @@ const logoStorage = new CloudinaryStorage({
   params: {
     folder:         'snackemi/logo',
     allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-    public_id:      'logo_emi',        // siempre sobreescribe el mismo archivo
-    overwrite:      true,
+    public_id: (req, file) => 'logo_emi',
+    overwrite: true,
     transformation: [{ width: 200, height: 200, crop: 'fit', quality: 'auto' }],
   },
 });

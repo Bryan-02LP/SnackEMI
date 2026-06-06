@@ -15,8 +15,8 @@ const qrStorage = new CloudinaryStorage({
   params: {
     folder:          'snackemi/qr',
     allowed_formats: ['jpg', 'jpeg', 'png'],
-    public_id:       'qr_pago',
-    overwrite:       true,
+    public_id: (req, file) => 'qr_pago',
+    overwrite: true,
     transformation:  [{ width: 400, height: 400, crop: 'fit', quality: 'auto' }],
   },
 });
