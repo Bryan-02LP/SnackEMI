@@ -13,7 +13,7 @@ const pool    = require('../db');
 const SAGA_REGEX = /^[A-Z]\d{4,6}-[A-Z]$/i;
 
 function makeToken(id, role) {
-  return jwt.sign({ uid: id, role }, process.env.JWT_SECRET, { expiresIn: '24h' });
+  return jwt.sign({ uid: id, role }, process.env.JWT_SECRET, { expiresIn: '7d' });
 }
 
 // ── LOGIN ──
