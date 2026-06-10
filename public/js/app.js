@@ -18,12 +18,16 @@ const APP = {
 const API = '/api';  // base URL del backend Node.js
 
 const CATEGORIES = [
-  { icon: '🍔', label: 'Comidas', key: 'Comidas' },
-  { icon: '🥤', label: 'Bebidas', key: 'Bebidas' },
-  { icon: '🍟', label: 'Snacks',  key: 'Snacks'  },
-  { icon: '🍬', label: 'Dulces',  key: 'Dulces'  },
-  { icon: '🍊', label: 'Jugos',   key: 'Jugos'   },
-  { icon: '🛒', label: 'Otros',   key: 'Otros'   },
+  { icon: '🍔', label: 'Comidas',           key: 'Comidas'           },
+  { icon: '🌅', label: 'Desayunos',         key: 'Desayunos'         },
+  { icon: '🥤', label: 'Bebidas frías',     key: 'Bebidas frías'     },
+  { icon: '☕', label: 'Bebidas calientes', key: 'Bebidas calientes' },
+  { icon: '🍟', label: 'Snacks',            key: 'Snacks'            },
+  { icon: '🍪', label: 'Galletas',          key: 'Galletas'          },
+  { icon: '🍬', label: 'Dulces',            key: 'Dulces'            },
+  { icon: '🍫', label: 'Chocolates',        key: 'Chocolates'        },
+  { icon: '🥛', label: 'Lácteos',           key: 'Lácteos'           },
+  { icon: '🍰', label: 'Postres',           key: 'Postres'           },
 ];
 
 /* ════════════════════════════════════════════════════════════
