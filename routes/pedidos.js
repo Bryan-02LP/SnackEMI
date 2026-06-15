@@ -26,16 +26,24 @@ router.get('/', requireAuth, async (req, res) => {
 
   try {
     const { rows } = await pool.query(sql, args);
-    // Agregar items a cada pedido
-    for (const ped of rows) {
+    if (rows.length > 0) {
+      const pedidoIds = rows.map(r => r.pedido_id);
       const det = await pool.query(
-        `SELECT dp.cantidad, dp.precio_unit, dp.subtotal, pr.nombre AS producto, pr.imagen_ruta
+        `SELECT dp.pedido_id, dp.cantidad, dp.precio_unit, dp.subtotal,
+                pr.nombre AS producto, pr.imagen_ruta
          FROM detalle_pedidos dp
          INNER JOIN productos pr ON dp.producto_id = pr.producto_id
-         WHERE dp.pedido_id = $1`,
-        [ped.pedido_id]
+         WHERE dp.pedido_id = ANY($1)`,
+        [pedidoIds]
       );
-      ped.items = det.rows;
+      const itemsByPedido = {};
+      for (const item of det.rows) {
+        if (!itemsByPedido[item.pedido_id]) itemsByPedido[item.pedido_id] = [];
+        itemsByPedido[item.pedido_id].push(item);
+      }
+      for (const ped of rows) {
+        ped.items = itemsByPedido[ped.pedido_id] || [];
+      }
     }
     res.json({ success: true, data: rows, total: rows.length });
   } catch (e) {
@@ -114,22 +122,29 @@ router.post('/', requireAuth, async (req, res) => {
 // ── ACTUALIZAR ESTADO ──
 router.put('/:id', requireAdmin, async (req, res) => {
   const { estado } = req.body;
+  const id = parseInt(req.params.id);
   const validos = ['pendiente','preparando','listo','entregado','cancelado'];
   if (!validos.includes(estado))
     return res.status(400).json({ error: 'Estado inválido' });
+  if (isNaN(id))
+    return res.status(400).json({ error: 'ID de pedido inválido' });
 
   try {
-    const r = await pool.query(
-      'UPDATE pedidos SET estado=$1 WHERE pedido_id=$2 RETURNING pedido_id',
-      [estado, req.params.id]
+    const current = await pool.query(
+      'SELECT estado FROM pedidos WHERE pedido_id = $1', [id]
     );
-    if (r.rowCount === 0) return res.status(404).json({ error: 'Pedido no encontrado' });
+    if (!current.rows[0]) return res.status(404).json({ error: 'Pedido no encontrado' });
+    const estadoAnterior = current.rows[0].estado;
 
-    // Si se cancela → devolver stock
-    if (estado === 'cancelado') {
+    await pool.query(
+      'UPDATE pedidos SET estado=$1 WHERE pedido_id=$2',
+      [estado, id]
+    );
+
+    // Si se cancela y el pedido aún no fue entregado → devolver stock
+    if (estado === 'cancelado' && estadoAnterior !== 'entregado') {
       const items = await pool.query(
-        'SELECT producto_id, cantidad FROM detalle_pedidos WHERE pedido_id=$1',
-        [req.params.id]
+        'SELECT producto_id, cantidad FROM detalle_pedidos WHERE pedido_id=$1', [id]
       );
       for (const i of items.rows) {
         await pool.query(
@@ -142,14 +157,9 @@ router.put('/:id', requireAdmin, async (req, res) => {
     }
     res.json({ success: true, mensaje: `Pedido → ${estado}` });
   } catch (e) {
+    console.error(e);
     res.status(500).json({ error: 'Error al actualizar' });
   }
 });
 
 module.exports = router;
-
-
-// ════════════════════════════════════════════════════════════
-// routes/stock.js  (exportado desde el mismo archivo por brevedad)
-// Crea el archivo routes/stock.js por separado si prefieres
-// ════════════════════════════════════════════════════════════

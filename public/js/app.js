@@ -8,6 +8,7 @@ const APP = {
   isAdmin:     false,
   cart:        [],
   products:    [],
+  categories:  [],
   orders:      [],
   currentDetail: null,
   splashStep:  0,
@@ -17,18 +18,11 @@ const APP = {
 
 const API = '/api';  // base URL del backend Node.js
 
-const CATEGORIES = [
-  { icon: '🍔', label: 'Comidas',           key: 'Comidas'           },
-  { icon: '🌅', label: 'Desayunos',         key: 'Desayunos'         },
-  { icon: '🥤', label: 'Bebidas frías',     key: 'Bebidas frías'     },
-  { icon: '☕', label: 'Bebidas calientes', key: 'Bebidas calientes' },
-  { icon: '🍟', label: 'Snacks',            key: 'Snacks'            },
-  { icon: '🍪', label: 'Galletas',          key: 'Galletas'          },
-  { icon: '🍬', label: 'Dulces',            key: 'Dulces'            },
-  { icon: '🍫', label: 'Chocolates',        key: 'Chocolates'        },
-  { icon: '🥛', label: 'Lácteos',           key: 'Lácteos'           },
-  { icon: '🍰', label: 'Postres',           key: 'Postres'           },
-];
+// Íconos de respaldo por nombre de categoría
+const CAT_ICONS = {
+  Comidas: '🍔', Bebidas: '🥤', Snacks: '🍟',
+  Dulces: '🍬', Jugos: '🍊', Otros: '🛒',
+};
 
 /* ════════════════════════════════════════════════════════════
    HELPERS API
@@ -175,13 +169,16 @@ async function handleLogin(e) {
   if (!saga || !pass) { showToast('Completa todos los campos', 'error'); return; }
 
   showToast('Iniciando sesión...', '');
-  const data = await apiPost('/auth/login', { saga, password: pass });
-  if (!data.success) { showToast(data.error || 'Error al iniciar sesión', 'error'); return; }
-
-  saveSession(data);
-  document.getElementById('auth-screen').classList.add('hidden');
-  launchStudent();
-  showToast(`Bienvenido, ${data.user.name.split(' ')[0]} 👋`, 'success');
+  try {
+    const data = await apiPost('/auth/login', { saga, password: pass });
+    if (!data.success) { showToast(data.error || 'Error al iniciar sesión', 'error'); return; }
+    saveSession(data);
+    document.getElementById('auth-screen').classList.add('hidden');
+    launchStudent();
+    showToast(`Bienvenido, ${data.user.name.split(' ')[0]} 👋`, 'success');
+  } catch {
+    showToast('Error de conexión. Intenta nuevamente.', 'error');
+  }
 }
 
 async function handleRegister(e) {
@@ -196,13 +193,16 @@ async function handleRegister(e) {
   if (pass !== pass2) { showToast('Las contraseñas no coinciden', 'error'); return; }
 
   showToast('Creando cuenta...', '');
-  const data = await apiPost('/auth/register', { name, ci, saga, password: pass });
-  if (!data.success) { showToast(data.error || 'Error al registrarse', 'error'); return; }
-
-  saveSession(data);
-  document.getElementById('auth-screen').classList.add('hidden');
-  launchStudent();
-  showToast('¡Cuenta creada exitosamente! 🎉', 'success');
+  try {
+    const data = await apiPost('/auth/register', { name, ci, saga, password: pass });
+    if (!data.success) { showToast(data.error || 'Error al registrarse', 'error'); return; }
+    saveSession(data);
+    document.getElementById('auth-screen').classList.add('hidden');
+    launchStudent();
+    showToast('¡Cuenta creada exitosamente! 🎉', 'success');
+  } catch {
+    showToast('Error de conexión. Intenta nuevamente.', 'error');
+  }
 }
 
 async function handleAdminLogin(e) {
@@ -211,15 +211,18 @@ async function handleAdminLogin(e) {
   const codigoAdmin = document.getElementById('admin-code').value;
 
   showToast('Verificando...', '');
-  const data = await apiPost('/auth/admin-login', { usuario, codigoAdmin });
-  if (!data.success) { showToast(data.error || 'Credenciales incorrectas', 'error'); return; }
-
-  saveSession(data);
-  APP.isAdmin = true;
-  closeModal('admin-login-modal');
-  document.getElementById('auth-screen').classList.add('hidden');
-  launchAdmin();
-  showToast('Bienvenido, Admin 🔐', 'success');
+  try {
+    const data = await apiPost('/auth/admin-login', { usuario, codigoAdmin });
+    if (!data.success) { showToast(data.error || 'Credenciales incorrectas', 'error'); return; }
+    saveSession(data);
+    APP.isAdmin = true;
+    closeModal('admin-login-modal');
+    document.getElementById('auth-screen').classList.add('hidden');
+    launchAdmin();
+    showToast('Bienvenido, Admin 🔐', 'success');
+  } catch {
+    showToast('Error de conexión. Intenta nuevamente.', 'error');
+  }
 }
 
 function saveSession(data) {
@@ -257,6 +260,7 @@ async function launchStudent() {
   document.getElementById('profile-ci').textContent      = u.ci || '—';
   document.getElementById('profile-saga-info').textContent = u.saga;
 
+  await loadCategories();
   await loadProducts();
   renderCategories();
   renderFeaturedProducts();
@@ -271,6 +275,7 @@ async function launchStudent() {
 
 async function launchAdmin() {
   document.getElementById('admin-app').classList.remove('hidden');
+  await loadCategories();
   await loadProducts();
   renderAdminDashboard();
   renderAdminProducts();
@@ -278,6 +283,25 @@ async function launchAdmin() {
   renderStockTable();
   renderStudentsTable();
   updateDashboardStats();
+}
+
+/* ════════════════════════════════════════════════════════════
+   CARGAR CATEGORÍAS DESDE API
+════════════════════════════════════════════════════════════ */
+async function loadCategories() {
+  try {
+    const data = await apiGet('/stock/categorias');
+    if (data.success && data.data.length) {
+      APP.categories = data.data.map(c => ({
+        id:    c.categoria_id,
+        icon:  c.icono || CAT_ICONS[c.nombre] || '🍽',
+        label: c.nombre,
+        key:   c.nombre,
+      }));
+    }
+  } catch (e) {
+    console.error('Error cargando categorías:', e);
+  }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -311,8 +335,9 @@ async function loadProducts() {
    RENDER — ESTUDIANTE
 ════════════════════════════════════════════════════════════ */
 function renderCategories() {
+  const cats = APP.categories;
   const c = document.getElementById('categories-row');
-  c.innerHTML = CATEGORIES.map(cat => `
+  c.innerHTML = cats.map(cat => `
     <div class="category-chip" onclick="filterByCategory('${cat.key}')">
       <span class="cat-icon">${cat.icon}</span>
       <span class="cat-label">${cat.label}</span>
@@ -342,12 +367,13 @@ function renderAllProducts(filter = '') {
 }
 
 function renderCatalog(categoryFilter = '') {
+  const cats = APP.categories;
   document.getElementById('filter-row').innerHTML = `
     <div class="categories-row">
       <div class="category-chip ${!categoryFilter?'active':''}" onclick="renderCatalog('')">
         <span class="cat-icon">🍽</span><span class="cat-label">Todo</span>
       </div>
-      ${CATEGORIES.map(c => `
+      ${cats.map(c => `
         <div class="category-chip ${categoryFilter===c.key?'active':''}" onclick="renderCatalog('${c.key}')">
           <span class="cat-icon">${c.icon}</span><span class="cat-label">${c.label}</span>
         </div>`).join('')}
@@ -525,7 +551,7 @@ function renderCartUI() {
    CHECKOUT
 ════════════════════════════════════════════════════════════ */
 function showScreen(screenId) {
-  if (screenId === 'checkout-screen') renderCheckout();
+  if (screenId === 'checkout-screen') { renderCheckout(); loadQRForCheckout(); }
   document.querySelectorAll('#student-app .app-screen').forEach(s => s.classList.remove('active'));
   const target = document.getElementById(screenId);
   if (target) { target.classList.add('active'); APP.prevScreen = screenId; }
@@ -554,50 +580,61 @@ async function confirmOrder() {
   const notes  = document.getElementById('order-notes')?.value?.trim() || '';
   showToast('Registrando pedido...', '');
 
-  const data = await apiPost('/pedidos', {
-    items:         APP.cart.map(i => ({ id: i.id, qty: i.qty })),
-    horaRecogida:  pickup,
-    metodoPago:    'QR',
-    observaciones: notes,
-  });
+  try {
+    const data = await apiPost('/pedidos', {
+      items:         APP.cart.map(i => ({ id: i.id, qty: i.qty })),
+      horaRecogida:  pickup,
+      metodoPago:    'QR',
+      observaciones: notes,
+    });
 
-  if (!data.success) { showToast(data.error || 'Error al registrar pedido', 'error'); return; }
+    if (!data.success) { showToast(data.error || 'Error al registrar pedido', 'error'); return; }
 
-  document.getElementById('order-number').textContent  = data.codigo;
-  document.getElementById('confirm-pickup').textContent = pickup;
-  document.getElementById('confirm-total').textContent  = `Bs. ${data.total.toFixed(2)}`;
-  APP.cart = [];
-  renderCartUI();
-  await loadProducts(); // actualizar stock
-  renderFeaturedProducts();
-  renderAllProducts();
-  showScreen('confirm-screen');
-  showToast('¡Pedido enviado! 🎉', 'success');
+    document.getElementById('order-number').textContent   = data.codigo;
+    document.getElementById('confirm-pickup').textContent = pickup;
+    document.getElementById('confirm-total').textContent  = `Bs. ${data.total.toFixed(2)}`;
+    APP.cart = [];
+    renderCartUI();
+    await loadProducts();
+    renderFeaturedProducts();
+    renderAllProducts();
+    showScreen('confirm-screen');
+    showToast('¡Pedido enviado! 🎉', 'success');
+  } catch {
+    showToast('Error de conexión. Intenta nuevamente.', 'error');
+  }
 }
 
 async function loadMyOrders() {
   const container = document.getElementById('my-orders-list');
   if (!container) return;
   container.innerHTML = `<div style="text-align:center;padding:30px;color:var(--gray-300)">Cargando...</div>`;
-  const data = await apiGet('/pedidos');
-  if (!data.success || !data.data.length) {
-    container.innerHTML = `<div class="empty-cart"><div class="empty-icon">📋</div><h4>Sin pedidos aún</h4></div>`;
-    return;
+  try {
+    const data = await apiGet('/pedidos');
+    if (!data.success || !data.data.length) {
+      container.innerHTML = `<div class="empty-cart"><div class="empty-icon">📋</div><h4>Sin pedidos aún</h4></div>`;
+      return;
+    }
+    const orderCountEl = document.getElementById('profile-orders');
+    if (orderCountEl) orderCountEl.textContent = data.total || 0;
+
+    container.innerHTML = data.data.map(o => `
+      <div class="order-card">
+        <div class="order-card-header">
+          <span class="order-num">${o.codigo}</span>
+          <span class="order-status status-${o.estado}">${statusLabel(o.estado)}</span>
+        </div>
+        <div style="font-size:.85rem;color:var(--gray-600);margin-bottom:4px">
+          ${o.items?.map(i=>`${i.producto} x${i.cantidad}`).join(', ') || ''}
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.85rem">
+          <span>⏱ ${o.hora_recogida || '—'}</span>
+          <strong>Bs. ${parseFloat(o.total).toFixed(2)}</strong>
+        </div>
+      </div>`).join('');
+  } catch {
+    container.innerHTML = `<div class="empty-cart"><div class="empty-icon">⚠️</div><h4>Error al cargar pedidos</h4></div>`;
   }
-  container.innerHTML = data.data.map(o => `
-    <div class="order-card">
-      <div class="order-card-header">
-        <span class="order-num">${o.codigo}</span>
-        <span class="order-status status-${o.estado}">${statusLabel(o.estado)}</span>
-      </div>
-      <div style="font-size:.85rem;color:var(--gray-600);margin-bottom:4px">
-        ${o.items?.map(i=>`${i.producto} x${i.cantidad}`).join(', ') || ''}
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:.85rem">
-        <span>⏱ ${o.hora_recogida || '—'}</span>
-        <strong>Bs. ${parseFloat(o.total).toFixed(2)}</strong>
-      </div>
-    </div>`).join('');
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -858,6 +895,13 @@ function openProductModal(productId = null) {
   document.getElementById('edit-product-id').value = '';
   APP._editingProductId = null;
 
+  // Poblar categorías dinámicamente desde la API
+  const catSel = document.getElementById('p-category');
+  if (catSel && APP.categories.length) {
+    catSel.innerHTML = `<option value="">Selecciona...</option>` +
+      APP.categories.map(c => `<option value="${c.label}">${c.label}</option>`).join('');
+  }
+
   if (productId) {
     const p = APP.products.find(x => x.id === productId);
     if (!p) return;
@@ -900,12 +944,18 @@ async function saveProduct(e) {
   fd.append('stock',       document.getElementById('p-stock').value);
   fd.append('minStock',    document.getElementById('p-min-stock').value || '5');
   fd.append('estado',      document.getElementById('p-status').value);
-  fd.append('destacado',   'false');
 
-  // Buscar el categoriaId según nombre
+  // Preservar destacado al editar; false solo para nuevos productos
+  const editingProduct = APP._editingProductId
+    ? APP.products.find(x => x.id === APP._editingProductId)
+    : null;
+  fd.append('destacado', editingProduct ? String(editingProduct.featured) : 'false');
+
+  // Buscar el categoriaId desde las categorías cargadas
   const catName = document.getElementById('p-category').value;
-  const catMap  = { Comidas:1, Bebidas:2, Snacks:3, Dulces:4, Jugos:5, Otros:6 };
-  fd.append('categoriaId', catMap[catName] || 6);
+  const catObj  = APP.categories.find(c => c.label === catName);
+  if (!catObj) { showToast('Selecciona una categoría válida', 'error'); return; }
+  fd.append('categoriaId', catObj.id);
 
   if (hasFile) fd.append('imagen', fileInput.files[0]);
 
@@ -984,7 +1034,8 @@ function getStockInfo(p) {
   return { class:'ok', label:'● Disponible' };
 }
 function getCatIcon(cat) {
-  return { Comidas:'🍔', Bebidas:'🥤', Snacks:'🍟', Dulces:'🍬', Jugos:'🍊', Otros:'🛒' }[cat] || '🍽';
+  const found = APP.categories.find(c => c.label === cat);
+  return found?.icon || CAT_ICONS[cat] || '🍽';
 }
 function statusLabel(s) {
   return { activo:'Disponible', agotado:'Agotado', inactivo:'Inactivo',

@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "fuser -k 3000/tcp 2>/dev/null; nodemon server.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

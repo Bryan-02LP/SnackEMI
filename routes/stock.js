@@ -17,7 +17,7 @@ router.get('/', requireAdmin, async (req, res) => {
       FROM productos p
       INNER JOIN categorias c ON p.categoria_id = c.categoria_id
       WHERE p.estado <> 'inactivo'
-      ORDER BY nivel_stock, p.nombre
+      ORDER BY CASE nivel_stock WHEN 'critico' THEN 1 WHEN 'bajo' THEN 2 ELSE 3 END, p.nombre
     `);
     const alertas = rows.filter(r => r.nivel_stock !== 'ok');
     res.json({ success: true, data: rows, alertas, total: rows.length });

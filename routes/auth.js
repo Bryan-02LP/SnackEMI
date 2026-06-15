@@ -5,10 +5,11 @@
 // POST /api/auth/admin-login
 // ════════════════════════════════════════════════════════════
 
-const router  = require('express').Router();
-const bcrypt  = require('bcryptjs');
-const jwt     = require('jsonwebtoken');
-const pool    = require('../db');
+const router        = require('express').Router();
+const bcrypt        = require('bcryptjs');
+const jwt           = require('jsonwebtoken');
+const pool          = require('../db');
+const { requireAdmin } = require('../middleware/auth');
 
 const SAGA_REGEX = /^[A-Z]\d{4,6}-[A-Z]$/i;
 
@@ -140,11 +141,8 @@ router.post('/admin-login', async (req, res) => {
   }
 });
 
-module.exports = router;
-
 // ── LISTAR ESTUDIANTES (admin) ──
-router.get('/students', async (req, res) => {
-  const { requireAdmin } = require('../middleware/auth');
+router.get('/students', requireAdmin, async (req, res) => {
   try {
     const { rows } = await pool.query(`
       SELECT u.usuario_id, u.nombre_completo, u.ci, u.codigo_saga,
@@ -164,3 +162,5 @@ router.get('/students', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener estudiantes' });
   }
 });
+
+module.exports = router;

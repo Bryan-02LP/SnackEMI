@@ -25,13 +25,37 @@ app.use('/api/productos', require('./routes/productos'));
 app.use('/api/pedidos',   require('./routes/pedidos'));
 app.use('/api/stock',     require('./routes/stock'));
 
+// ── 404 para rutas de API desconocidas ──
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Endpoint no encontrado' });
+});
+
 // ── RUTA PRINCIPAL → devuelve el HTML ──
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// ── MANEJADOR GLOBAL DE ERRORES ──
+app.use((err, req, res, next) => {
+  console.error('Error no controlado:', err);
+  res.status(500).json({ error: 'Error interno del servidor' });
+});
+
 // ── INICIAR SERVIDOR ──
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`\n🍔 SnackEMI corriendo en http://localhost:${PORT}`);
   console.log(`   Entorno: ${process.env.NODE_ENV || 'development'}\n`);
 });
+
+// ── CIERRE LIMPIO (evita EADDRINUSE al reiniciar) ──
+function shutdown(signal) {
+  console.log(`\n${signal} recibido. Cerrando servidor...`);
+  server.close(() => {
+    console.log('Servidor cerrado correctamente.');
+    process.exit(0);
+  });
+  // Forzar cierre si tarda más de 5 segundos
+  setTimeout(() => process.exit(1), 5000);
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));

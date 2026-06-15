@@ -1,36 +1,37 @@
 // ════════════════════════════════════════════════════════════
-// routes/productos.js — con Cloudinary para imágenes
+// routes/productos.js
 // ════════════════════════════════════════════════════════════
 
-const router                        = require('express').Router();
-const pool                          = require('../db');
-const { requireAdmin }              = require('../middleware/auth');
-const { cloudinary, uploadProducto, uploadLogo } = require('../cloudinary');
-const { CloudinaryStorage }         = require('multer-storage-cloudinary');
-const multer                        = require('multer');
+const router   = require('express').Router();
+const pool     = require('../db');
+const path     = require('path');
+const fs       = require('fs');
+const { requireAdmin } = require('../middleware/auth');
+const { cloudinary, uploadProducto, uploadLogo, uploadQR, useCloudinary, fileUrl } = require('../cloudinary');
 
-// ── QR Storage ──
-const qrStorage = new CloudinaryStorage({
-  cloudinary,
-  params: {
-    folder:          'snackemi/qr',
-    allowed_formats: ['jpg', 'jpeg', 'png'],
-    public_id: (req, file) => 'qr_pago',
-    overwrite: true,
-    transformation:  [{ width: 400, height: 400, crop: 'fit', quality: 'auto' }],
-  },
-});
-const uploadQRFile = multer({ storage: qrStorage, limits: { fileSize: 2 * 1024 * 1024 } });
+// Borra la imagen antigua al editar o eliminar un producto
+function deleteOldImage(url) {
+  if (!url) return;
+  if (useCloudinary && url.includes('cloudinary')) {
+    const idx = url.indexOf('/upload/');
+    if (idx === -1) return;
+    let id = url.slice(idx + 8).replace(/^v\d+\//, '').replace(/\.[^.]+$/, '');
+    cloudinary.uploader.destroy(id).catch(() => {});
+  } else if (!useCloudinary && url.startsWith('/img/')) {
+    const filePath = path.join(__dirname, '../public', url);
+    fs.unlink(filePath, () => {});
+  }
+}
 
 // ── LISTAR ──
 router.get('/', async (req, res) => {
   const { cat, destacado } = req.query;
-  let sql  = `SELECT p.producto_id, p.nombre, p.descripcion, p.precio,
-                     p.stock_actual, p.stock_minimo, p.imagen_ruta,
-                     p.estado, p.destacado, c.nombre AS categoria, c.icono
-              FROM productos p
-              INNER JOIN categorias c ON p.categoria_id = c.categoria_id
-              WHERE p.estado <> 'inactivo'`;
+  let sql = `SELECT p.producto_id, p.nombre, p.descripcion, p.precio,
+                    p.stock_actual, p.stock_minimo, p.imagen_ruta,
+                    p.estado, p.destacado, c.nombre AS categoria, c.icono
+             FROM productos p
+             INNER JOIN categorias c ON p.categoria_id = c.categoria_id
+             WHERE p.estado <> 'inactivo'`;
   const args = [];
   if (cat)       { args.push(cat);  sql += ` AND c.nombre = $${args.length}`; }
   if (destacado) { args.push(true); sql += ` AND p.destacado = $${args.length}`; }
@@ -44,35 +45,53 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ── DETALLE ──
-router.get('/logo/url', async (req, res) => {
+// ── URL DEL LOGO ──
+router.get('/logo/url', (req, res) => {
   try {
-    const url = cloudinary.url('snackemi/logo/logo_emi', { fetch_format: 'auto', quality: 'auto' });
-    res.json({ success: true, url });
+    if (useCloudinary) {
+      const url = cloudinary.url('snackemi/logo/logo_emi', { fetch_format: 'auto', quality: 'auto' });
+      return res.json({ success: true, url });
+    }
+    const logoDir = path.join(__dirname, '../public/img/logo');
+    const files   = fs.existsSync(logoDir) ? fs.readdirSync(logoDir).filter(f => f.startsWith('logo_emi')) : [];
+    const url     = files.length ? '/img/logo/' + files[0] : null;
+    res.json({ success: !!url, url });
   } catch {
     res.json({ success: false, url: null });
   }
 });
 
+// ── URL DEL QR ──
 router.get('/qr/url', (req, res) => {
   try {
-    const url = cloudinary.url('snackemi/qr/qr_pago', { fetch_format: 'auto', quality: 'auto' });
-    res.json({ success: true, url });
+    if (useCloudinary) {
+      const url = cloudinary.url('snackemi/qr/qr_pago', { fetch_format: 'auto', quality: 'auto' });
+      return res.json({ success: true, url });
+    }
+    const qrDir = path.join(__dirname, '../public/img/qr');
+    const files = fs.existsSync(qrDir) ? fs.readdirSync(qrDir).filter(f => f.startsWith('qr_pago')) : [];
+    const url   = files.length ? '/img/qr/' + files[0] : null;
+    res.json({ success: !!url, url });
   } catch {
     res.json({ success: false, url: null });
   }
 });
 
+// ── SUBIR LOGO ──
 router.post('/logo/upload', requireAdmin, uploadLogo.single('logo'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No se recibió imagen' });
-  res.json({ success: true, url: req.file.path, mensaje: 'Logo EMI actualizado' });
+  const url = fileUrl(req.file, 'logo');
+  res.json({ success: true, url, mensaje: 'Logo EMI actualizado' });
 });
 
-router.post('/qr/upload', requireAdmin, uploadQRFile.single('qr'), (req, res) => {
+// ── SUBIR QR ──
+router.post('/qr/upload', requireAdmin, uploadQR.single('qr'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No se recibió imagen' });
-  res.json({ success: true, url: req.file.path, mensaje: 'QR de pago actualizado' });
+  const url = fileUrl(req.file, 'qr');
+  res.json({ success: true, url, mensaje: 'QR de pago actualizado' });
 });
 
+// ── DETALLE POR ID ──
 router.get('/:id', async (req, res) => {
   try {
     const { rows } = await pool.query(
@@ -92,7 +111,7 @@ router.get('/:id', async (req, res) => {
 // ── CREAR ──
 router.post('/', requireAdmin, uploadProducto.single('imagen'), async (req, res) => {
   const { nombre, descripcion, precio, stock, minStock, categoriaId, estado, destacado } = req.body;
-  const imagenRuta = req.file ? req.file.path : null;
+  const imagenRuta = req.file ? fileUrl(req.file, 'prod') : null;
   if (!nombre || !precio || !categoriaId)
     return res.status(400).json({ error: 'Nombre, precio y categoría son requeridos' });
   try {
@@ -114,10 +133,11 @@ router.post('/', requireAdmin, uploadProducto.single('imagen'), async (req, res)
 // ── EDITAR ──
 router.put('/:id', requireAdmin, uploadProducto.single('imagen'), async (req, res) => {
   const { nombre, descripcion, precio, stock, minStock, categoriaId, estado, destacado } = req.body;
-  const id = parseInt(req.params.id);
+  const id     = parseInt(req.params.id);
   const campos = [];
   const args   = [];
-  const set = (col, val) => { args.push(val); campos.push(`${col} = $${args.length}`); };
+  const set    = (col, val) => { args.push(val); campos.push(`${col} = $${args.length}`); };
+
   if (nombre)                    set('nombre', nombre);
   if (descripcion !== undefined) set('descripcion', descripcion);
   if (precio)                    set('precio', parseFloat(precio));
@@ -126,27 +146,24 @@ router.put('/:id', requireAdmin, uploadProducto.single('imagen'), async (req, re
   if (categoriaId)               set('categoria_id', parseInt(categoriaId));
   if (estado)                    set('estado', estado);
   if (destacado !== undefined)   set('destacado', destacado === 'true');
+
   if (req.file) {
     const old = await pool.query('SELECT imagen_ruta FROM productos WHERE producto_id=$1', [id]);
-    const oldUrl = old.rows[0]?.imagen_ruta;
-    if (oldUrl && oldUrl.includes('cloudinary')) {
-      const parts  = oldUrl.split('/');
-      const file   = parts[parts.length-1].split('.')[0];
-      const folder = parts[parts.length-2];
-      cloudinary.uploader.destroy(`${folder}/${file}`).catch(() => {});
-    }
-    set('imagen_ruta', req.file.path);
+    deleteOldImage(old.rows[0]?.imagen_ruta);
+    set('imagen_ruta', fileUrl(req.file, 'prod'));
   }
+
   set('fecha_actualizacion', new Date());
   args.push(id);
   if (campos.length === 1) return res.status(400).json({ error: 'Nada que actualizar' });
+
   try {
     const result = await pool.query(
       `UPDATE productos SET ${campos.join(', ')} WHERE producto_id = $${args.length}`,
       args
     );
     if (result.rowCount === 0) return res.status(404).json({ error: 'Producto no encontrado' });
-    res.json({ success: true, message: 'Producto actualizado', imagen: req.file?.path });
+    res.json({ success: true, message: 'Producto actualizado', imagen: req.file ? fileUrl(req.file, 'prod') : null });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Error al actualizar' });
@@ -165,13 +182,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
       return res.json({ success: true, message: 'Producto desactivado' });
     }
     const prod = await pool.query('SELECT imagen_ruta FROM productos WHERE producto_id=$1', [id]);
-    const url  = prod.rows[0]?.imagen_ruta;
-    if (url && url.includes('cloudinary')) {
-      const parts  = url.split('/');
-      const file   = parts[parts.length-1].split('.')[0];
-      const folder = parts[parts.length-2];
-      cloudinary.uploader.destroy(`${folder}/${file}`).catch(() => {});
-    }
+    deleteOldImage(prod.rows[0]?.imagen_ruta);
     await pool.query('DELETE FROM productos WHERE producto_id = $1', [id]);
     res.json({ success: true, message: 'Producto eliminado' });
   } catch (e) {
